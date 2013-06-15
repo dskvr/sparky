@@ -49,7 +49,6 @@ char c;
 int fixedIntval = 50;
 
 int totalvalves = 9;
-int flame[totalvalves];
 
 int valvestatus[9] = {0,0,0,0,0,0,0,0,0};
 
