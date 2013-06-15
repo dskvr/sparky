@@ -183,11 +183,11 @@ void loop()
 		for(int v;v<totalvalves;v++){
 			
 			//Let's save the id of the torch for this particular frame in the current effect.
-			on = effect[currenteffect][currentframe][v];
+			state = effect[currenteffect][currentframe][v];
 			
 			//If it has been at least X (see 'read') and this torch should be one.
 			// else if( sinceLast >= intval && on == '1' || sustains[v] > 0) { 
-			else if( sinceLast >= intval && on == '1') { 
+			else if( sinceLast >= intval && state == '1') { 
 	      shifter.setPin(v, HIGH); shifter.write();
 				valvestatus[v] = '1';
 				lastTrigger = millis();
@@ -197,7 +197,7 @@ void loop()
 				// 				sustains[v] = sustain;
 				// 			}
 			//If the torch has been on for long enough or it is off (precautions)
-	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == '1') || on == '0') 
+	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == '1') || state == '0') 
 			 { //the valve is on, but it's time to go off; 
 	      shifter.setPin(v, LOW); shifter.write(); 
 				valvestatus[v] = '0';
