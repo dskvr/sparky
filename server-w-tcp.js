@@ -14,7 +14,7 @@ server = http.createServer(function(req, res){
   var path = url.parse(req.url).pathname;
   switch (path){
 		case '/js/jquery.gracefulwebsocket.js':
-			fs.readFile(__dirname + '/js/jquery.gracefulwebsocket.js', function(err, data){
+			fs.readFile(__dirname + path, function(err, data){
         if (err) return send404(res);
         res.writeHead(200, { 'Content-Type' : 'text/javascript' });
         res.write(data, 'utf8');
@@ -25,6 +25,39 @@ server = http.createServer(function(req, res){
 			fs.readFile(__dirname + '/js/jquery.js', function(err, data){
         if (err) return send404(res);
         res.writeHead(200, { 'Content-Type' : 'text/javascript' });
+        res.write(data, 'utf8');
+        res.end();
+      });
+      break;
+		case '/js/jquery.mobile.custom.js':
+			fs.readFile(__dirname + path, function(err, data){
+        if (err) return send404(res);
+        res.writeHead(200, { 'Content-Type' : 'text/javascript' });
+        res.write(data, 'utf8');
+        res.end();
+      });
+      break;
+
+		case '/js/jquery-ui.custom.min.js':
+			fs.readFile(__dirname + path, function(err, data){
+        if (err) return send404(res);
+        res.writeHead(200, { 'Content-Type' : 'text/javascript' });
+        res.write(data, 'utf8');
+        res.end();
+      });
+      break;
+		case '/js/jquery.mobile.custom.structure.css':
+			fs.readFile(__dirname + path, function(err, data){
+        if (err) return send404(res);
+        res.writeHead(200, { 'Content-Type' : 'text/css' });
+        res.write(data, 'utf8');
+        res.end();
+      });
+      break;
+		case '/js/jquery.mobile.custom.theme.css':
+			fs.readFile(__dirname + path, function(err, data){
+        if (err) return send404(res);
+        res.writeHead(200, { 'Content-Type' : 'text/css' });
         res.write(data, 'utf8');
         res.end();
       });
@@ -65,17 +98,18 @@ var io = io.listen(server)
 io.set("destroy upgrade",false);
   
 io.on('connection', function(client){
+	var totalChatGuests = tcpGuests.length;
+
   client.send({buffer : buffer});
   client.broadcast.send({ announcement: client.sessionId + ' connected' });
   
   chatGuests.push(client);
-  
   client.on('message', function(message){
+		totalChatGuests = tcpGuests.length;
     var msg = { message: [client.sessionId, message] };
     buffer.push(msg);
     if (buffer.length > 15) buffer.shift();
-    client.broadcast.send(msg);
-    
+    if(totalChatGuests) client.broadcast.send(msg);
     //send msg to tcp connections
     for (g in tcpGuests) {
         tcpGuests[g].write(message);
@@ -94,14 +128,14 @@ var tcpServer = net.createServer(function (socket) {
 });
 
 tcpServer.on('connection',function(socket){
-    socket.write('connected to the tcp server\r\n');
+    // socket.write('connezcted to the tcp server\r\n');
     console.log('num of connections on port 1337: ' + tcpServer.connections);
     
     tcpGuests.push(socket);
     
     socket.on('data',function(data){
         console.log('received on tcp socket:'+data);
-        socket.write('msg received\r\n');
+        // socket.write('msg received\r\n');
         
         //send data to guest socket.io chat server
         for (g in io.clients) {
