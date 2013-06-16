@@ -10,14 +10,14 @@
 //This is the shift register library.
 Shifter shifter(SER_Pin, RCLK_Pin, SRCLK_Pin, NUM_REGISTERS); 
 
-int map = {0,1,8,9,16,17,24,25,32}
+int pinmap[9] = {0,1,9,8,17,16,24,25,26};
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 //This is the assigned IP of the arduino. 
-byte ip = IPAddress(192,168,1,111);
+byte ip = IPAddress(192,168,1,148);
 
 //THIS IS THE RASPBERRY PI IP ADDRESS!
 byte server[] = { 192,168,1,100 };
@@ -25,10 +25,14 @@ byte server[] = { 192,168,1,100 };
 EthernetClient client;
 
 bool flame = 0;
+bool flagreset = 0;
 bool first = true;
 int intval = 100;
 
 void setup() {
+	
+
+	
   // start the Ethernet connection:
   Ethernet.begin(mac);
   // start the serial library:
@@ -70,7 +74,7 @@ int totalframes = 9;
 // int sustains[9];
 
 //Count these effects and update 'totaleffects' everytime you add a new effect.
-int effects[totaleffects][totalframes][totalvalves] = {
+int effects[17][9][9] = {
 	{ 
 		//0 Tracer
 		{1,0,0,0,0,0,0,0,0},
@@ -259,10 +263,10 @@ int effects[totaleffects][totalframes][totalvalves] = {
 		{0,0,0,0,0,0,0,0,0},
 		{0,0,0,0,0,0,0,0,0}
 	}
-} 
+};
 
 //Have less than 9 frames in an effect;
-int effectFrameOffset[totaleffects] = {
+int effectFrameOffset[17] = {
 	0, //0
 	0, //1
 	0, //2
@@ -280,7 +284,7 @@ int effectFrameOffset[totaleffects] = {
 	-1, //14
 	-5, //15
 	0 //16
-}
+};
 
 // char* sequences[5];
 
@@ -288,6 +292,32 @@ void read(){
 	//Speed Settings
 	
 	//effects
+}
+
+void resetEffect(){
+		//Reset the frames.
+		currentframe = 0;
+	
+		//Since it is off, next effect.
+		currenteffect++; 
+	
+		Serial.println(currenteffect);
+	
+		//Set back to zero if it has reached the last effect. 
+		currenteffect = (currenteffect < totaleffects) ? currenteffect : 0;
+		
+		flagreset=0;
+		
+}
+
+void allOff(){
+	// Serial.println("off"); 
+	Serial.flush();
+	
+	for(int v;v<totalvalves;v++) {
+		//All off.
+		shifter.setPin(v, LOW); shifter.write(); 	
+	}
 }
 
 void loop()
@@ -330,62 +360,72 @@ void loop()
 		for(int v;v<totalvalves;v++){
 			
 			//Let's save the id of the torch for this particular frame in the current effect.
-			state = effect[currenteffect][currentframe][v];
+			int state = effects[currenteffect][currentframe][v];
+			
+			// Serial.print(state);
 			
 			//If it has been at least X (see 'read') and this torch should be one.
 			// else if( sinceLast >= intval && on == '1' || sustains[v] > 0) { 
-			else if( (sinceLast >= intval && state == '1') || (first && state == '1') ) { 
-	      shifter.setPin(map[v], HIGH); shifter.write();
+			if( (sinceLast >= intval && state == 1) || (first && state == 1) ) { 
+	      shifter.setPin(pinmap[v], HIGH); shifter.write();
 				valvestatus[v] = 1;
+				if(first) first = false;
+				// Serial.print("torch number ");
+				// Serial.print(v);
+				// Serial.println(" on.");
 				// if(sustain && sustains[v] > 0) {
 				// 				sustains[v] = sustains[v]-1;
 				// 			} else if(sustains[v] == 0 && sustain) {
 				// 				sustains[v] = sustain;
 				// 			}
 			//If the torch has been on for long enough or it is off (precautions)
-				if(first) first = false;
-	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == 1) || state == '0') 
+				
+	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == 1) || state == 0) 
 			 { //the valve is on, but it's time to go off; 
-	      shifter.setPin(map[v], LOW); shifter.write(); 
+	      shifter.setPin(pinmap[v], LOW); shifter.write(); 
 				valvestatus[v] = 0;
+				// Serial.print("torch number ");
+				// Serial.print(v);
+				// Serial.println(" OFF.");
 	     }
 		}
+		// Serial.println();
+		
 		
 		//After all the valves have been set, we prepare the next frame.
 		//Let's do this outside of the loop so we don't call it unecessarily. 
 		if(sinceLast >= intval) {
 			
-			//A frame just triggered increment the frame
 			currentframe++;
 			
+			int number = effectFrameOffset[currenteffect];
+			
 			//Where is the boundary from the loop (applied to the end of the sequence)
-			int reset = (effectFrameOffset[currenteffect] < 0) ? 9+effectFrameOffset[currenteffect] : totalframes;
+			int reset = (number<0) ? number+9 : totalframes;
+			
+			if(reset>totalvalves) reset = totalvalves;
 			
 			//Normalize the keys
-			currentframe = (currentframe >= reset) ? 0 : currentframe;
+			currentframe = (currentframe < reset) ? currentframe++ : 0;
 			
 			//Set the last trigger afterwards. 
 			lastTrigger = millis();
 			
+			// Serial.print("Effect #");
+			// Serial.println(currenteffect);
+
+			// Serial.print("Frame #");
+			// Serial.println(currentframe);
+			
 		}
 
+		flagreset = 1;
 	//The flame is OFF (client sent 0 or no client connected)
 	} else {
 		
-		// Serial.println("off"); 
-		Serial.flush();
+		allOff();
 		
-		for(int v;v<totalvalves;v++) {
-			//All off.
-			shifter.setPin(v, LOW); shifter.write(); 
-			
-		}
-		
-		//Since it is off, next effect.
-		currenteffect++; 
-		
-		//Set back to zero if it has reached the last effect. 
-		currenteffect = (currenteffect < totaleffects) ? currenteffect : 0;
+		if(flagreset == 1) { resetEffect(); }
 		
 	}
 	

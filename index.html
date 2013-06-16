@@ -25,6 +25,8 @@
 			var h = $(document).height();
 			var touches;
 			var H = h/10;
+			
+			var yScale, yScaleCurrent;
 		
 			$('div')
 				.css({
@@ -40,7 +42,7 @@
 			
 			var time = new Date().getTime();
 			var timepassed = 0;
-			var thresh = 250;			
+			var thresh = 10;			
 			
 			$(document)
 				.bind('touchstart', function(event){
@@ -51,7 +53,12 @@
 					$('div')
 						.css( {top : y} );
 						
+					var $body  = $('body');
+						
 					socket.send(yScale);
+					yScaleCurrent = yScale;
+					
+					bodybg();
 					// $('div').css({background: 'transparent'});
 					// $('div[level='+yScale+']').css({background: '#FFF'});
 				})
@@ -63,18 +70,23 @@
 					
 					var cur = new Date().getTime();
 					timepassed = cur - time;
-					time = cur;
+					time = cur;				
 					
 					if(timepassed > thresh) {
-						socket.send(yScale);
+						if(yScale != yScaleCurrent) {
+							socket.send(yScale);
+							yScaleCurrent = yScale;
+						}
 						timepassed = 0;
 					}
 					
 					$('div')
-						.css( {top : y} )
-						.html(yScale);
+						.css( {top : y} );
+						// .html(yScale);
 						
 					move = true;
+					
+					bodybg();
 					// $('div:eq(0)').html(event.pageX);
 				})
 				.bind('touchend', function(event){
@@ -85,7 +97,10 @@
 						
 					// socket.emit('message', yScale);
 					socket.send(0);
-						
+					yScale = 0;
+					yScaleCurrent = yScale;
+					bodybg();
+											
 				});
 				
 				function handleStart(evt) {
@@ -122,6 +137,31 @@
 				  }
 				}
 				
+				function bodybg(){
+					$body = $('body');
+					switch(yScaleCurrent) {
+						case 0:
+							$body.css({backgroundColor: '#000000'}); break;
+						case 1:
+							$body.cs({backgroundColor: '#111111'}); break;
+						case 2:
+							$body.css({backgroundColor: '#222222'}); break;
+						case 3:
+							$body.css({backgroundColor: '#333333'}); break;
+						case 4:
+							$body.css({backgroundColor: '#444444'}); break;
+						case 5:
+							$body.css({backgroundColor: '#555555'}); break;
+						case 6:
+							$body.css({backgroundColor: '#666666'}); break;
+						case 7:
+							$body.css({backgroundColor: '#777777'}); break;
+						case 8:
+							$body.css({backgroundColor: '#888888'}); break;
+						case 9:
+							$body.css({backgroundColor: '#999999'}); break;
+					}
+				}
 				
 				function handleEnd(evt) {
 				  evt.preventDefault();
@@ -206,6 +246,13 @@
 		
 		
 	</script>
+	<style type="text/css">
+		div {text-align:center; color:#c0c0c0 !important; font-weight:bold; font-size:30pt; padding-top:10px; }
+		* { 
+			-webkit-touch-callout:none;
+			-webkit-user-select:none;
+		}
+	</style>
 </head>
 <body style="background:#000">
 	<div></div>
