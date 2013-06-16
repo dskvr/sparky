@@ -5,10 +5,12 @@
 #define SER_Pin 5 //SER_IN
 #define RCLK_Pin 3 //L_CLOCK
 #define SRCLK_Pin 2 //CLOCK
-#define NUM_REGISTERS 1 //how many registers are in the chain
+#define NUM_REGISTERS 5 //how many registers are in the chain
 
 //This is the shift register library.
 Shifter shifter(SER_Pin, RCLK_Pin, SRCLK_Pin, NUM_REGISTERS); 
+
+int map = {0,1,8,9,16,17,24,25,32}
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -333,8 +335,8 @@ void loop()
 			//If it has been at least X (see 'read') and this torch should be one.
 			// else if( sinceLast >= intval && on == '1' || sustains[v] > 0) { 
 			else if( (sinceLast >= intval && state == '1') || (first && state == '1') ) { 
-	      shifter.setPin(v, HIGH); shifter.write();
-				valvestatus[v] = '1';
+	      shifter.setPin(map[v], HIGH); shifter.write();
+				valvestatus[v] = 1;
 				// if(sustain && sustains[v] > 0) {
 				// 				sustains[v] = sustains[v]-1;
 				// 			} else if(sustains[v] == 0 && sustain) {
@@ -342,10 +344,10 @@ void loop()
 				// 			}
 			//If the torch has been on for long enough or it is off (precautions)
 				if(first) first = false;
-	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == '1') || state == '0') 
+	     } else if ( (sinceLast >= fixedIntval && valvestatus[v] == 1) || state == '0') 
 			 { //the valve is on, but it's time to go off; 
-	      shifter.setPin(v, LOW); shifter.write(); 
-				valvestatus[v] = '0';
+	      shifter.setPin(map[v], LOW); shifter.write(); 
+				valvestatus[v] = 0;
 	     }
 		}
 		
